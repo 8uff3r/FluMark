@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class MarkdownBuilder {
-  MarkdownBuilder({
+  const MarkdownBuilder({
     this.h1,
     this.h2,
     this.h3,

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:markdown/builder.dart';
-import 'package:markdown/markdown.dart';
-import 'package:markdown/style.dart';
+import 'package:markdown/src/builder.dart';
+import 'package:markdown/src/markdown.dart';
+import 'package:markdown/src/style.dart';
 
 void main() {
   testWidgets('Markdown widget renders simple text', (WidgetTester tester) async {

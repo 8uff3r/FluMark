@@ -1,5 +1,5 @@
 name: markdown
-description: "A new Flutter package project."
+description: "A Flutter package for parsing and rendering markdown with optimized performance for large documents."
 version: 0.0.1
 homepage:
 
