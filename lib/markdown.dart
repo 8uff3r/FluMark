@@ -28,7 +28,7 @@ class Markdown extends StatelessWidget {
       h4: defaultStyle.titleMedium?.merge(style?.h4),
       h5: defaultStyle.titleSmall?.merge(style?.h5),
       h6: defaultStyle.bodyLarge?.merge(style?.h6),
-      bold: const TextStyle(fontWeight: FontWeight.bold).merge(style?.bold),
+      bold: TextStyle(fontWeight: FontWeight.bold).merge(style?.bold),
       italic: const TextStyle(fontStyle: FontStyle.italic).merge(style?.italic),
       unorderedList: defaultStyle.bodyMedium?.merge(style?.unorderedList),
       orderedList: defaultStyle.bodyMedium?.merge(style?.orderedList),
@@ -135,6 +135,7 @@ class _MarkdownParser {
         final widget =
             builder.orderedList?.call(text, _orderedListCounter) ??
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('$_orderedListCounter. '),
                 Expanded(
@@ -223,9 +224,9 @@ class _MarkdownParser {
       spans.add(TextSpan(text: line));
     }
 
-    return RichText(
+    return Text.rich(
+      TextSpan(children: spans, style: const TextStyle()),
       textAlign: textAlign ?? TextAlign.start,
-      text: TextSpan(children: spans, style: const TextStyle()),
     );
   }
 

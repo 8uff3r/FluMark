@@ -28,8 +28,8 @@ void main() {
       ),
     );
 
-    final richText = tester.widget<RichText>(find.byType(RichText));
-    final textSpan = richText.text as TextSpan;
+    final text = tester.widget<Text>(find.byType(Text));
+    final textSpan = text.textSpan as TextSpan;
     expect(textSpan.children, isNotNull);
     expect(textSpan.children!.length, 1);
     final boldSpan = textSpan.children![0] as TextSpan;
@@ -46,8 +46,8 @@ void main() {
       ),
     );
 
-    final richText = tester.widget<RichText>(find.byType(RichText));
-    final textSpan = richText.text as TextSpan;
+    final text = tester.widget<Text>(find.byType(Text));
+    final textSpan = text.textSpan as TextSpan;
     expect(textSpan.children, isNotNull);
     expect(textSpan.children!.length, 1);
     final italicSpan = textSpan.children![0] as TextSpan;
@@ -64,8 +64,8 @@ void main() {
       ),
     );
 
-    final richText = tester.widget<RichText>(find.byType(RichText));
-    final textSpan = richText.text as TextSpan;
+    final text = tester.widget<Text>(find.byType(Text));
+    final textSpan = text.textSpan as TextSpan;
     expect(textSpan.children, isNotNull);
     expect(textSpan.children!.length, 3);
     final boldSpan = textSpan.children![0] as TextSpan;
@@ -157,8 +157,8 @@ void main() {
       ),
     );
 
-    final richText = tester.widget<RichText>(find.byType(RichText));
-    final textSpan = richText.text as TextSpan;
+    final text = tester.widget<Text>(find.byType(Text));
+    final textSpan = text.textSpan as TextSpan;
     expect(textSpan.children, isNotNull);
     expect(textSpan.children!.length, 1);
     final linkSpan = textSpan.children![0] as TextSpan;
