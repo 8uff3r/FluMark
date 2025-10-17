@@ -10,6 +10,12 @@ class MarkdownStyle {
     this.h6,
     this.bold,
     this.italic,
+    this.unorderedList,
+    this.orderedList,
+    this.link,
+    this.tableBorder,
+    this.tableHeader,
+    this.tableCell,
   });
 
   final TextStyle? h1;
@@ -20,4 +26,10 @@ class MarkdownStyle {
   final TextStyle? h6;
   final TextStyle? bold;
   final TextStyle? italic;
+  final TextStyle? unorderedList;
+  final TextStyle? orderedList;
+  final TextStyle? link;
+  final TableBorder? tableBorder;
+  final TextStyle? tableHeader;
+  final TextStyle? tableCell;
 }
