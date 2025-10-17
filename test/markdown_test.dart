@@ -189,4 +189,17 @@ void main() {
     final bodyCell2 = bodyRow.children[1] as Text;
     expect(bodyCell2.data, 'Cell 2');
   });
+
+  testWidgets('Markdown widget applies textAlign', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: Markdown(data: 'Hello', textAlign: TextAlign.center),
+        ),
+      ),
+    );
+
+    final richText = tester.widget<RichText>(find.byType(RichText));
+    expect(richText.textAlign, TextAlign.center);
+  });
 }

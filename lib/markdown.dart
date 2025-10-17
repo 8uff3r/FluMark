@@ -5,11 +5,18 @@ import 'package:markdown/style.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class Markdown extends StatelessWidget {
-  const Markdown({super.key, required this.data, this.style, this.builder});
+  const Markdown({
+    super.key,
+    required this.data,
+    this.style,
+    this.builder,
+    this.textAlign,
+  });
 
   final String data;
   final MarkdownStyle? style;
   final MarkdownBuilder? builder;
+  final TextAlign? textAlign;
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +32,10 @@ class Markdown extends StatelessWidget {
       italic: const TextStyle(fontStyle: FontStyle.italic).merge(style?.italic),
       unorderedList: defaultStyle.bodyMedium?.merge(style?.unorderedList),
       orderedList: defaultStyle.bodyMedium?.merge(style?.orderedList),
-      link: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline).merge(style?.link),
+      link: const TextStyle(
+        color: Colors.blue,
+        decoration: TextDecoration.underline,
+      ).merge(style?.link),
       tableBorder: style?.tableBorder,
       tableHeader: defaultStyle.bodyMedium?.merge(style?.tableHeader),
       tableCell: defaultStyle.bodyMedium?.merge(style?.tableCell),
@@ -35,6 +45,7 @@ class Markdown extends StatelessWidget {
       data: data,
       style: mdStyle,
       builder: builder ?? MarkdownBuilder(),
+      textAlign: textAlign,
     );
     final widgets = parser.parse();
     return Column(
@@ -49,11 +60,13 @@ class _MarkdownParser {
     required this.data,
     required this.style,
     required this.builder,
+    this.textAlign,
   });
 
   final String data;
   final MarkdownStyle style;
   final MarkdownBuilder builder;
+  final TextAlign? textAlign;
   int _orderedListCounter = 1;
   bool _isParsingTable = false;
 
@@ -64,45 +77,73 @@ class _MarkdownParser {
     for (final line in lines) {
       if (line.startsWith('# ')) {
         final text = line.substring(2);
-        final widget = builder.h1?.call(text) ?? Text(text, style: style.h1);
+        final widget =
+            builder.h1?.call(text) ??
+            Text(text, style: style.h1, textAlign: textAlign);
         widgets.add(widget);
       } else if (line.startsWith('## ')) {
         final text = line.substring(3);
-        final widget = builder.h2?.call(text) ?? Text(text, style: style.h2);
+        final widget =
+            builder.h2?.call(text) ??
+            Text(text, style: style.h2, textAlign: textAlign);
         widgets.add(widget);
       } else if (line.startsWith('### ')) {
         final text = line.substring(4);
-        final widget = builder.h3?.call(text) ?? Text(text, style: style.h3);
+        final widget =
+            builder.h3?.call(text) ??
+            Text(text, style: style.h3, textAlign: textAlign);
         widgets.add(widget);
       } else if (line.startsWith('#### ')) {
         final text = line.substring(5);
-        final widget = builder.h4?.call(text) ?? Text(text, style: style.h4,);
+        final widget =
+            builder.h4?.call(text) ??
+            Text(text, style: style.h4, textAlign: textAlign);
         widgets.add(widget);
       } else if (line.startsWith('##### ')) {
         final text = line.substring(6);
-        final widget = builder.h5?.call(text) ?? Text(text, style: style.h5);
+        final widget =
+            builder.h5?.call(text) ??
+            Text(text, style: style.h5, textAlign: textAlign);
         widgets.add(widget);
       } else if (line.startsWith('###### ')) {
         final text = line.substring(7);
-        final widget = builder.h6?.call(text) ?? Text(text, style: style.h6);
+        final widget =
+            builder.h6?.call(text) ??
+            Text(text, style: style.h6, textAlign: textAlign);
         widgets.add(widget);
-      } else if (line.startsWith('* ') || line.startsWith('- ') || line.startsWith('+ ')) {
+      } else if (line.startsWith('* ') ||
+          line.startsWith('- ') ||
+          line.startsWith('+ ')) {
         final text = line.substring(2);
-        final widget = builder.unorderedList?.call(text) ??
+        final widget =
+            builder.unorderedList?.call(text) ??
             Row(
               children: [
                 const Text('• '),
-                Expanded(child: Text(text, style: style.unorderedList)),
+                Expanded(
+                  child: Text(
+                    text,
+                    style: style.unorderedList,
+                    textAlign: textAlign,
+                  ),
+                ),
               ],
             );
         widgets.add(widget);
       } else if (line.startsWith(RegExp(r'^[0-9]+\. '))) {
         final text = line.substring(line.indexOf('. ') + 2);
-        final widget = builder.orderedList?.call(text, _orderedListCounter) ??
+        final widget =
+            builder.orderedList?.call(text, _orderedListCounter) ??
             Row(
               children: [
                 Text('$_orderedListCounter. '),
-                Expanded(child: Text(text, style: style.orderedList)),
+                Expanded(
+                  child: Text(
+                    text,
+                    style: style.orderedList,
+                    textAlign: textAlign,
+                  ),
+                ),
               ],
             );
         widgets.add(widget);
@@ -123,7 +164,9 @@ class _MarkdownParser {
 
   Widget _parseLine(String line) {
     final spans = <InlineSpan>[];
-    final regex = RegExp(r'(\*\*|\*)(.*?)\1|\!\[(.*?)\]\((.*?)\)|\[(.*?)\]\((.*?)\)');
+    final regex = RegExp(
+      r'(\*\*|\*)(.*?)\1|\!\[(.*?)\]\((.*?)\)|\[(.*?)\]\((.*?)\)',
+    );
     final matches = regex.allMatches(line);
 
     var lastIndex = 0;
@@ -162,7 +205,8 @@ class _MarkdownParser {
             TextSpan(
               text: linkText,
               style: style.link,
-              recognizer: TapGestureRecognizer()..onTap = () => launchUrl(Uri.parse(linkUrl)),
+              recognizer: TapGestureRecognizer()
+                ..onTap = () => launchUrl(Uri.parse(linkUrl)),
             ),
           );
         }
@@ -180,6 +224,7 @@ class _MarkdownParser {
     }
 
     return RichText(
+      textAlign: textAlign ?? TextAlign.start,
       text: TextSpan(children: spans, style: const TextStyle()),
     );
   }
@@ -188,15 +233,21 @@ class _MarkdownParser {
     final rows = <TableRow>[];
     var isHeader = true;
     for (final line in lines) {
-      if (!line.contains('|') || line.contains(RegExp(r'^\|(\s*:?-+:?\s*\|)+$'))) {
+      if (!line.contains('|') ||
+          line.contains(RegExp(r'^\|(\s*:?-+:?\s*\|)+$'))) {
         continue;
       }
-      final cells = line.split('|').where((cell) => cell.isNotEmpty).map((cell) {
+      final cells = line.split('|').where((cell) => cell.isNotEmpty).map((
+        cell,
+      ) {
         final cellBuilder = builder.tableCell?.call(cell.trim());
         if (cellBuilder != null) {
           return cellBuilder;
         }
-        return Text(cell.trim(), style: isHeader ? style.tableHeader : style.tableCell);
+        return Text(
+          cell.trim(),
+          style: isHeader ? style.tableHeader : style.tableCell,
+        );
       }).toList();
 
       final rowBuilder = builder.tableRow?.call(cells);
@@ -213,9 +264,6 @@ class _MarkdownParser {
       return tableBuilder;
     }
 
-    return Table(
-      border: style.tableBorder,
-      children: rows,
-    );
+    return Table(border: style.tableBorder, children: rows);
   }
 }
