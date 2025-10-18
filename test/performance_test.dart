@@ -34,7 +34,7 @@ void main() {
       ),
     );
     
-    expect(find.byType(ListView), findsOneWidget);
+    expect(find.byType(CustomScrollView), findsOneWidget);
   });
 }
 

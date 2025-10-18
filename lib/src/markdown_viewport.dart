@@ -8,12 +8,11 @@ import 'package:url_launcher/url_launcher.dart';
 /// A performance-optimized markdown widget that renders content lazily
 /// as the user scrolls, making it suitable for very large markdown documents.
 /// 
-/// This widget uses [ListView.builder] to render content on-demand, significantly
-/// improving performance for large documents by only building widgets that are visible.
+/// This widget uses [CustomScrollView] with [SliverList] to render content on-demand, 
+/// significantly improving performance for large documents by only building widgets that are visible.
 /// 
-/// Note: This widget requires a bounded height constraint. If placed inside a 
-/// column or other unbounded container, wrap it with [Expanded], [SizedBox] with 
-/// a fixed height, or ensure the parent provides bounded constraints.
+/// This widget works both in bounded and unbounded contexts, making it suitable for use 
+/// inside [Flexible], [Expanded], or with fixed dimensions.
 class MarkdownViewport extends StatefulWidget {
   const MarkdownViewport({
     super.key,
@@ -48,7 +47,10 @@ class _MarkdownViewportState extends State<MarkdownViewport> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _parseMarkdownElements();
+    // Only parse if we don't have elements yet, to avoid reparsing unnecessarily
+    if (_elements == null) {
+      _parseMarkdownElements();
+    }
   }
 
   @override
@@ -60,6 +62,9 @@ class _MarkdownViewportState extends State<MarkdownViewport> {
   }
 
   void _parseMarkdownElements() {
+    // Check if widget is still mounted before accessing context
+    if (!mounted) return;
+    
     final defaultStyle = Theme.of(context).textTheme;
     final mdStyle = MarkdownStyle(
       h1: defaultStyle.headlineMedium?.merge(widget.style?.h1),
@@ -87,9 +92,15 @@ class _MarkdownViewportState extends State<MarkdownViewport> {
       builder: widget.builder ?? const MarkdownBuilder(),
       textAlign: widget.textAlign,
     );
-    setState(() {
-      _elements = parser.parse();
-    });
+    
+    final newElements = parser.parse();
+    
+    // Check again if widget is still mounted before setState
+    if (mounted) {
+      setState(() {
+        _elements = newElements;
+      });
+    }
   }
 
   @override
@@ -98,53 +109,53 @@ class _MarkdownViewportState extends State<MarkdownViewport> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Check if we have bounded height, if not use CustomScrollView
-        if (constraints.maxHeight == double.infinity) {
-          // If the parent doesn't provide bounded height, use CustomScrollView
-          return CustomScrollView(
-            controller: widget.controller,
-            physics: widget.physics,
-            slivers: [
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  childCount: _elements!.length,
-                  (context, index) => _buildElement(_elements![index]),
-                ),
-              ),
-            ],
-          );
-        } else {
-          // If parent provides bounded height, use ListView
-          return ListView.builder(
-            controller: widget.controller,
-            physics: widget.physics,
-            itemCount: _elements!.length,
-            itemBuilder: (context, index) {
-              return _buildElement(_elements![index]);
+    // Create a local copy to ensure thread safety during build process
+    final elements = _elements;
+    if (elements == null) {
+      return const SizedBox.shrink();
+    }
+
+    // For compatibility with Flex contexts (like inside Flexible/Expanded),
+    // always use CustomScrollView which works in both bounded and unbounded contexts
+    return CustomScrollView(
+      controller: widget.controller,
+      physics: widget.physics,
+      slivers: [
+        SliverList(
+          delegate: SliverChildBuilderDelegate(
+            childCount: elements.length,
+            (context, index) {
+              // Check bounds again inside the builder to be extra safe
+              if (index >= 0 && index < elements.length) {
+                return _buildElement(elements[index]);
+              }
+              return const SizedBox.shrink();
             },
-          );
-        }
-      },
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildElement(_MarkdownElement element) {
     switch (element.type) {
       case _MarkdownElementType.text:
-        return (element as _TextElement).widget;
+        if (element is _TextElement) return element.widget;
+        break;
       case _MarkdownElementType.header:
-        return (element as _HeaderElement).widget;
+        if (element is _HeaderElement) return element.widget;
+        break;
       case _MarkdownElementType.unorderedList:
-        return (element as _UnorderedListElement).widget;
+        if (element is _UnorderedListElement) return element.widget;
+        break;
       case _MarkdownElementType.orderedList:
-        return (element as _OrderedListElement).widget;
+        if (element is _OrderedListElement) return element.widget;
+        break;
       case _MarkdownElementType.table:
-        return (element as _TableElement).widget;
-      default:
-        return const SizedBox.shrink();
+        if (element is _TableElement) return element.widget;
+        break;
     }
+    return const SizedBox.shrink();
   }
 }
 

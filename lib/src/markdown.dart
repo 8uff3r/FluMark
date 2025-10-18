@@ -88,6 +88,7 @@ class _MarkdownParser {
   static final RegExp _headerPattern = RegExp(r'^(#{1,6})\s+(.*)');
   static final RegExp _unorderedListPattern = RegExp(r'^[\*\-\+]\s+(.*)');
   static final RegExp _orderedListPattern = RegExp(r'^(\d+)\.\s+(.*)');
+  static final RegExp _hrPattern = RegExp(r'^(\s*)(\*{3,}|-{3,}|_{3,})(\s*)$');
   static final RegExp _tableSeparatorPattern = RegExp(r'^\|(\s*:?-+:?\s*\|)+$');
   static final RegExp _boldItalicPattern = RegExp(r'\*\*(.*?)\*\*|__(.*?)__|(?<!\*)\*([^*]+)\*(?!\*)|(?<!_)_([^_]+)_(?!_)');
   static final RegExp _linkPattern = RegExp(r'\[([^\]]+)\]\(([^)]+)\)');
@@ -102,6 +103,14 @@ class _MarkdownParser {
     int i = 0;
     while (i < lines.length) {
       final line = lines[i];
+      
+      // Check for horizontal rules first
+      final hrMatch = _hrPattern.firstMatch(line);
+      if (hrMatch != null) {
+        widgets.add(_buildHorizontalRule());
+        i++;
+        continue;
+      }
       
       // Check for headers
       final headerMatch = _headerPattern.firstMatch(line);
@@ -225,6 +234,17 @@ class _MarkdownParser {
             ),
           ],
         );
+  }
+
+  Widget _buildHorizontalRule() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Divider(
+        height: 16,
+        thickness: 1,
+        color: Colors.grey.shade400,
+      ),
+    );
   }
 
   ({Widget widget, int nextLineIndex})? _parseTable(List<String> lines, int startIndex) {
@@ -357,22 +377,29 @@ class _MarkdownParser {
 
     final spans = <InlineSpan>[];
     
-    // Process the line for all markdown elements in the correct order
+    // Process the line for all markdown elements
     int lastIndex = 0;
     
+    // To properly handle nested markdown elements, we need to be more careful
     // Find all matches for bold/italic and links
-    final boldMatches = _boldItalicPattern.allMatches(line).toList();
-    final linkMatches = _linkPattern.allMatches(line).toList();
-    
-    // Create a combined list of all matches and sort by position
     final allMatches = <Match>[];
-    allMatches.addAll(boldMatches);
-    allMatches.addAll(linkMatches);
+    
+    // Add bold/italic matches
+    for (final match in _boldItalicPattern.allMatches(line)) {
+      allMatches.add(match);
+    }
+    
+    // Add link matches
+    for (final match in _linkPattern.allMatches(line)) {
+      allMatches.add(match);
+    }
+    
+    // Sort all matches by position
     allMatches.sort((a, b) => a.start.compareTo(b.start));
     
-    // Process matches in order
+    // Process matches in order, being careful not to process overlapping matches incorrectly
     for (final match in allMatches) {
-      // Add text before the match
+      // Add text before the match if there's any
       if (match.start > lastIndex) {
         spans.add(TextSpan(text: line.substring(lastIndex, match.start)));
       }
@@ -393,8 +420,8 @@ class _MarkdownParser {
         } else if (matchedText.startsWith('_') && matchedText.endsWith('_')) {
           final content = matchedText.substring(1, matchedText.length - 1);
           spans.add(_createItalicSpan(content));
-        } else if (match.groupCount >= 1) {
-          // Handle links
+        } else if (match.groupCount >= 2) {
+          // Handle links (need at least 2 groups: text and URL)
           final linkText = match.group(1);
           final linkUrl = match.group(2);
           if (linkText != null && linkUrl != null) {
@@ -403,14 +430,16 @@ class _MarkdownParser {
         }
       }
       
+      // Update the last processed index
       lastIndex = match.end;
     }
     
-    // Add remaining text after the last match
+    // Add any remaining text after the last match
     if (lastIndex < line.length) {
       spans.add(TextSpan(text: line.substring(lastIndex)));
     }
     
+    // If no markdown elements were found, just return the whole line
     if (spans.isEmpty) {
       spans.add(TextSpan(text: line));
     }

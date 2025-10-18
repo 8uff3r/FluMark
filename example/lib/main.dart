@@ -119,5 +119,18 @@ String _generateLargeMarkdownString() {
   buffer.writeln();
   buffer.writeln('The Viewport version is more efficient for large documents as it only builds widgets that are visible on screen.');
   
+  buffer.writeln();
+  buffer.writeln('---'); // Horizontal rule
+  buffer.writeln();
+  
+  buffer.writeln('## New Features');
+  buffer.writeln('This updated version now supports:');
+  buffer.writeln();
+  buffer.writeln('* Horizontal rules (like the line above)');
+  buffer.writeln('* More robust link parsing');
+  buffer.writeln('* Better performance for large documents');
+  buffer.writeln();
+  buffer.writeln('[Visit Flutter Website](https://flutter.dev)');
+  
   return buffer.toString();
 }
