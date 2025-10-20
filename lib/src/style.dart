@@ -10,6 +10,11 @@ class MarkdownStyle {
     this.h6,
     this.bold,
     this.italic,
+    this.boldItalic,
+    this.strikethrough,
+    this.inlineCode,
+    this.codeBlock,
+    this.blockquote,
     this.unorderedList,
     this.orderedList,
     this.link,
@@ -26,6 +31,11 @@ class MarkdownStyle {
   final TextStyle? h6;
   final TextStyle? bold;
   final TextStyle? italic;
+  final TextStyle? boldItalic;
+  final TextStyle? strikethrough;
+  final TextStyle? inlineCode;
+  final TextStyle? codeBlock;
+  final TextStyle? blockquote;
   final TextStyle? unorderedList;
   final TextStyle? orderedList;
   final TextStyle? link;
