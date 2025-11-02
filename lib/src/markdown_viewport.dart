@@ -16,6 +16,7 @@ class MarkdownViewport extends StatefulWidget {
     super.key,
     required this.data,
     this.style,
+    this.globalStyle,
     this.builder,
     this.textAlign,
     this.physics,
@@ -24,6 +25,7 @@ class MarkdownViewport extends StatefulWidget {
 
   final String data;
   final MarkdownStyle? style;
+  final TextStyle? globalStyle;
   final MarkdownBuilder? builder;
   final TextAlign? textAlign;
   final ScrollPhysics? physics;
@@ -57,23 +59,47 @@ class _MarkdownViewportState extends State<MarkdownViewport> {
 
     final defaultStyle = Theme.of(context).textTheme;
     final mdStyle = MarkdownStyle(
-      h1: defaultStyle.headlineMedium?.merge(widget.style?.h1),
-      h2: defaultStyle.headlineSmall?.merge(widget.style?.h2),
-      h3: defaultStyle.titleLarge?.merge(widget.style?.h3),
-      h4: defaultStyle.titleMedium?.merge(widget.style?.h4),
-      h5: defaultStyle.titleSmall?.merge(widget.style?.h5),
-      h6: defaultStyle.bodyLarge?.merge(widget.style?.h6),
-      bold: const TextStyle(fontWeight: FontWeight.bold).merge(widget.style?.bold),
-      italic: const TextStyle(fontStyle: FontStyle.italic).merge(widget.style?.italic),
-      unorderedList: defaultStyle.bodyMedium?.merge(widget.style?.unorderedList),
-      orderedList: defaultStyle.bodyMedium?.merge(widget.style?.orderedList),
+      h1: defaultStyle.headlineMedium
+          ?.merge(widget.globalStyle)
+          .merge(widget.style?.h1),
+      h2: defaultStyle.headlineSmall
+          ?.merge(widget.globalStyle)
+          .merge(widget.style?.h2),
+      h3: defaultStyle.titleLarge
+          ?.merge(widget.globalStyle)
+          .merge(widget.style?.h3),
+      h4: defaultStyle.titleMedium
+          ?.merge(widget.globalStyle)
+          .merge(widget.style?.h4),
+      h5: defaultStyle.titleSmall
+          ?.merge(widget.globalStyle)
+          .merge(widget.style?.h5),
+      h6: defaultStyle.bodyLarge
+          ?.merge(widget.globalStyle)
+          .merge(widget.style?.h6),
+      bold: const TextStyle(
+        fontWeight: FontWeight.bold,
+      ).merge(widget.globalStyle).merge(widget.style?.bold),
+      italic: const TextStyle(
+        fontStyle: FontStyle.italic,
+      ).merge(widget.globalStyle).merge(widget.style?.italic),
+      unorderedList: defaultStyle.bodyMedium
+          ?.merge(widget.globalStyle)
+          .merge(widget.style?.unorderedList),
+      orderedList: defaultStyle.bodyMedium
+          ?.merge(widget.globalStyle)
+          .merge(widget.style?.orderedList),
       link: const TextStyle(
         color: Colors.blue,
         decoration: TextDecoration.underline,
-      ).merge(widget.style?.link),
+      ).merge(widget.globalStyle).merge(widget.style?.link),
       tableBorder: widget.style?.tableBorder,
-      tableHeader: defaultStyle.bodyMedium?.merge(widget.style?.tableHeader),
-      tableCell: defaultStyle.bodyMedium?.merge(widget.style?.tableCell),
+      tableHeader: defaultStyle.bodyMedium
+          ?.merge(widget.globalStyle)
+          .merge(widget.style?.tableHeader),
+      tableCell: defaultStyle.bodyMedium
+          ?.merge(widget.globalStyle)
+          .merge(widget.style?.tableCell),
     );
 
     final parser = MarkdownParser(

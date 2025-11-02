@@ -26,20 +26,18 @@ class MarkdownParser {
 
   // Fixed: horizontal rule - allows optional spaces between chars
   static final RegExp _hrPattern = RegExp(
-    r'^[ \t]*(?:(?:\*\s*){3,}|(?:-\s*){3,}|(?:_\s*){3,})[ \t]*$'
+    r'^[ \t]*(?:(?:\*\s*){3,}|(?:-\s*){3,}|(?:_\s*){3,})[ \t]*$',
   );
 
   // Fixed: table separator pattern (removed \$ typo)
-  static final RegExp _tableSeparatorPattern = RegExp(
-    r'^\|(\s*:?-+:?\s*\|)+$',
-  );
+  static final RegExp _tableSeparatorPattern = RegExp(r'^\|(\s*:?-+:?\s*\|)+$');
 
   // Improved: better bold/italic pattern with bold-italic support
   static final RegExp _boldItalicCombinedPattern = RegExp(
-    r'\*\*\*(.+?)\*\*\*|___(.+?)___|'  // Bold+Italic
-    r'\*\*(.+?)\*\*|__(.+?)__|'        // Bold
-    r'(?<!\*)\*([^\s*](?:[^*]*[^\s*])?)\*(?!\*)|'  // Italic *
-    r'(?<!_)_([^\s_](?:[^_]*[^\s_])?)_(?!_)'       // Italic _
+    r'\*\*\*(.+?)\*\*\*|___(.+?)___|' // Bold+Italic
+    r'\*\*(.+?)\*\*|__(.+?)__|' // Bold
+    r'(?<!\*)\*([^\s*](?:[^*]*[^\s*])?)\*(?!\*)|' // Italic *
+    r'(?<!_)_([^\s_](?:[^_]*[^\s_])?)_(?!_)', // Italic _
   );
 
   static final RegExp _strikethroughPattern = RegExp(r'~~(.+?)~~');
@@ -271,10 +269,9 @@ class MarkdownParser {
         scrollDirection: Axis.horizontal,
         child: Text(
           content,
-          style: style.codeBlock ?? const TextStyle(
-            fontFamily: 'monospace',
-            fontSize: 14,
-          ),
+          style:
+              style.codeBlock ??
+              const TextStyle(fontFamily: 'monospace', fontSize: 14),
         ),
       ),
     );
@@ -291,17 +288,14 @@ class MarkdownParser {
       margin: const EdgeInsets.symmetric(vertical: 8),
       padding: const EdgeInsets.only(left: 12, top: 8, bottom: 8, right: 8),
       decoration: BoxDecoration(
-        border: Border(
-          left: BorderSide(color: Colors.grey.shade400, width: 4),
-        ),
+        border: Border(left: BorderSide(color: Colors.grey.shade400, width: 4)),
         color: Colors.grey.shade100,
       ),
       child: Text.rich(
         processedContent,
-        style: style.blockquote ?? TextStyle(
-          color: Colors.grey.shade700,
-          fontStyle: FontStyle.italic,
-        ),
+        style:
+            style.blockquote ??
+            TextStyle(color: Colors.grey.shade700, fontStyle: FontStyle.italic),
         textAlign: textAlign,
       ),
     );
@@ -314,31 +308,59 @@ class MarkdownParser {
       case 1:
         final customWidget = builder.h1?.call(content);
         if (customWidget != null) return customWidget;
-        return Text.rich(processedContent, style: style.h1, textAlign: textAlign);
+        return Text.rich(
+          processedContent,
+          style: style.h1,
+          textAlign: textAlign,
+        );
       case 2:
         final customWidget = builder.h2?.call(content);
         if (customWidget != null) return customWidget;
-        return Text.rich(processedContent, style: style.h2, textAlign: textAlign);
+        return Text.rich(
+          processedContent,
+          style: style.h2,
+          textAlign: textAlign,
+        );
       case 3:
         final customWidget = builder.h3?.call(content);
         if (customWidget != null) return customWidget;
-        return Text.rich(processedContent, style: style.h3, textAlign: textAlign);
+        return Text.rich(
+          processedContent,
+          style: style.h3,
+          textAlign: textAlign,
+        );
       case 4:
         final customWidget = builder.h4?.call(content);
         if (customWidget != null) return customWidget;
-        return Text.rich(processedContent, style: style.h4, textAlign: textAlign);
+        return Text.rich(
+          processedContent,
+          style: style.h4,
+          textAlign: textAlign,
+        );
       case 5:
         final customWidget = builder.h5?.call(content);
         if (customWidget != null) return customWidget;
-        return Text.rich(processedContent, style: style.h5, textAlign: textAlign);
+        return Text.rich(
+          processedContent,
+          style: style.h5,
+          textAlign: textAlign,
+        );
       case 6:
         final customWidget = builder.h6?.call(content);
         if (customWidget != null) return customWidget;
-        return Text.rich(processedContent, style: style.h6, textAlign: textAlign);
+        return Text.rich(
+          processedContent,
+          style: style.h6,
+          textAlign: textAlign,
+        );
       default:
         final customWidget = builder.h1?.call(content);
         if (customWidget != null) return customWidget;
-        return Text.rich(processedContent, style: style.h1, textAlign: textAlign);
+        return Text.rich(
+          processedContent,
+          style: style.h1,
+          textAlign: textAlign,
+        );
     }
   }
 
@@ -354,7 +376,11 @@ class MarkdownParser {
         children: [
           const Text('• ', style: TextStyle(fontSize: 16)),
           Expanded(
-            child: Text.rich(processedContent, style: style.unorderedList, textAlign: textAlign),
+            child: Text.rich(
+              processedContent,
+              style: style.unorderedList,
+              textAlign: textAlign,
+            ),
           ),
         ],
       ),
@@ -374,7 +400,11 @@ class MarkdownParser {
         children: [
           Text('$currentCounter. ', style: style.orderedList),
           Expanded(
-            child: Text.rich(processedContent, style: style.orderedList, textAlign: textAlign),
+            child: Text.rich(
+              processedContent,
+              style: style.orderedList,
+              textAlign: textAlign,
+            ),
           ),
         ],
       ),
@@ -550,7 +580,9 @@ class MarkdownParser {
       final match = matchInfo.match;
 
       if (match.start > lastIndex) {
-        spans.add(TextSpan(text: processedLine.substring(lastIndex, match.start)));
+        spans.add(
+          TextSpan(text: processedLine.substring(lastIndex, match.start)),
+        );
       }
 
       switch (matchInfo.type) {
@@ -635,10 +667,12 @@ class MarkdownParser {
 
     return TextSpan(
       text: content,
-      style: style.boldItalic ?? const TextStyle(
-        fontWeight: FontWeight.bold,
-        fontStyle: FontStyle.italic,
-      ),
+      style:
+          style.boldItalic ??
+          const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontStyle: FontStyle.italic,
+          ),
     );
   }
 
@@ -660,9 +694,9 @@ class MarkdownParser {
 
     return TextSpan(
       text: content,
-      style: style.strikethrough ?? const TextStyle(
-        decoration: TextDecoration.lineThrough,
-      ),
+      style:
+          style.strikethrough ??
+          const TextStyle(decoration: TextDecoration.lineThrough),
     );
   }
 
@@ -672,11 +706,13 @@ class MarkdownParser {
 
     return TextSpan(
       text: code,
-      style: style.inlineCode ?? TextStyle(
-        fontFamily: 'monospace',
-        backgroundColor: Colors.grey.shade200,
-        fontSize: 14,
-      ),
+      style:
+          style.inlineCode ??
+          TextStyle(
+            fontFamily: 'monospace',
+            backgroundColor: Colors.grey.shade200,
+            fontSize: 14,
+          ),
     );
   }
 
@@ -721,13 +757,7 @@ class MarkdownParser {
   }
 }
 
-enum _MatchType {
-  image,
-  link,
-  code,
-  strikethrough,
-  boldItalic,
-}
+enum _MatchType { image, link, code, strikethrough, boldItalic }
 
 class _MatchInfo {
   final Match match;

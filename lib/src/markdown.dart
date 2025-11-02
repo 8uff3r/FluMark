@@ -8,6 +8,7 @@ class Markdown extends StatelessWidget {
     super.key,
     required this.data,
     this.style,
+    this.globalStyle,
     this.builder,
     this.textAlign,
     this.shrinkWrap = false,
@@ -16,6 +17,7 @@ class Markdown extends StatelessWidget {
 
   final String data;
   final MarkdownStyle? style;
+  final TextStyle? globalStyle;
   final MarkdownBuilder? builder;
   final TextAlign? textAlign;
   final bool shrinkWrap;
@@ -25,14 +27,18 @@ class Markdown extends StatelessWidget {
   Widget build(BuildContext context) {
     final defaultStyle = Theme.of(context).textTheme;
     final mdStyle = MarkdownStyle(
-      h1: defaultStyle.headlineMedium?.merge(style?.h1),
-      h2: defaultStyle.headlineSmall?.merge(style?.h2),
-      h3: defaultStyle.titleLarge?.merge(style?.h3),
-      h4: defaultStyle.titleMedium?.merge(style?.h4),
-      h5: defaultStyle.titleSmall?.merge(style?.h5),
-      h6: defaultStyle.bodyLarge?.merge(style?.h6),
-      bold: TextStyle(fontWeight: FontWeight.bold).merge(style?.bold),
-      italic: const TextStyle(fontStyle: FontStyle.italic).merge(style?.italic),
+      h1: defaultStyle.headlineMedium?.merge(globalStyle).merge(style?.h1),
+      h2: defaultStyle.headlineSmall?.merge(globalStyle).merge(style?.h2),
+      h3: defaultStyle.titleLarge?.merge(globalStyle).merge(style?.h3),
+      h4: defaultStyle.titleMedium?.merge(globalStyle).merge(style?.h4),
+      h5: defaultStyle.titleSmall?.merge(globalStyle).merge(style?.h5),
+      h6: defaultStyle.bodyLarge?.merge(globalStyle).merge(style?.h6),
+      bold: TextStyle(
+        fontWeight: FontWeight.bold,
+      ).merge(globalStyle).merge(style?.bold),
+      italic: const TextStyle(
+        fontStyle: FontStyle.italic,
+      ).merge(globalStyle).merge(style?.italic),
       unorderedList: defaultStyle.bodyMedium?.merge(style?.unorderedList),
       orderedList: defaultStyle.bodyMedium?.merge(style?.orderedList),
       link: const TextStyle(
