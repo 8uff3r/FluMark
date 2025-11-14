@@ -475,6 +475,9 @@ class MarkdownParser {
     final headerCells = _parseTableCells(headerLine);
     if (headerCells.isEmpty) return null;
 
+    // Track the expected column count from header
+    final columnCount = headerCells.length;
+
     final headerRow = TableRow(
       children: headerCells.map((cell) {
         final cellBuilder = builder.tableCell?.call(cell.trim());
@@ -499,8 +502,11 @@ class MarkdownParser {
       final dataCells = _parseTableCells(line);
       if (dataCells.isEmpty) break;
 
+      // Normalize cell count to match column count
+      final normalizedCells = _normalizeCells(dataCells, columnCount);
+
       final dataRow = TableRow(
-        children: dataCells.map((cell) {
+        children: normalizedCells.map((cell) {
           final cellBuilder = builder.tableCell?.call(cell.trim());
           if (cellBuilder != null) return cellBuilder;
           return Padding(
@@ -520,9 +526,37 @@ class MarkdownParser {
     }
 
     return (
-      widget: Table(border: style.tableBorder, children: rows),
+      widget: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Table(
+              border: style.tableBorder,
+              children: rows,
+              defaultColumnWidth: const IntrinsicColumnWidth(),
+            ),
+          ),
+        ),
+      ),
       nextLineIndex: currentIndex,
     );
+  }
+
+  /// Normalizes cell count to match expected column count
+  /// Pads with empty strings if too few cells, truncates if too many
+  List<String> _normalizeCells(List<String> cells, int expectedCount) {
+    if (cells.length == expectedCount) {
+      return cells;
+    } else if (cells.length < expectedCount) {
+      // Pad with empty cells
+      return List<String>.from(cells)
+        ..addAll(List<String>.filled(expectedCount - cells.length, ''));
+    } else {
+      // Truncate excess cells
+      return cells.sublist(0, expectedCount);
+    }
   }
 
   List<String> _parseTableCells(String line) {
