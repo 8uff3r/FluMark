@@ -21,6 +21,7 @@ class MarkdownParser {
   int _orderedListCounter = 1;
   bool _inOrderedList = false;
   int _widgetKeyCounter = 0;
+  bool _lastWasBlockOrEmpty = false;
 
   // Pre-compiled regex patterns for better performance
   static final RegExp _headerPattern = RegExp(r'^(#{1,6})\s+(.*)');
@@ -61,6 +62,7 @@ class MarkdownParser {
     _orderedListCounter = 1;
     _inOrderedList = false;
     _widgetKeyCounter = 0;
+    _lastWasBlockOrEmpty = false;
 
     final lines = _splitLines(data);
     final widgets = <Widget>[];
@@ -74,7 +76,14 @@ class MarkdownParser {
       if (codeBlockMatch != null) {
         final result = _parseFencedCodeBlock(lines, i);
         if (result != null) {
-          widgets.add(result.widget);
+          widgets.add(
+            KeyedSubtree(
+              key: ValueKey('md_code_$_widgetKeyCounter'),
+              child: result.widget,
+            ),
+          );
+          _widgetKeyCounter++;
+          _lastWasBlockOrEmpty = true;
           i = result.nextLineIndex;
           continue;
         }
@@ -82,7 +91,14 @@ class MarkdownParser {
 
       // Check for horizontal rules
       if (_hrPattern.hasMatch(line)) {
-        widgets.add(_buildHorizontalRule());
+        widgets.add(
+          KeyedSubtree(
+            key: ValueKey('md_hr_$_widgetKeyCounter'),
+            child: _buildHorizontalRule(),
+          ),
+        );
+        _widgetKeyCounter++;
+        _lastWasBlockOrEmpty = true;
         _resetListCounter();
         i++;
         continue;
@@ -100,6 +116,7 @@ class MarkdownParser {
           ),
         );
         _widgetKeyCounter++;
+        _lastWasBlockOrEmpty = false;
         _resetListCounter();
         i++;
         continue;
@@ -116,6 +133,7 @@ class MarkdownParser {
           ),
         );
         _widgetKeyCounter++;
+        _lastWasBlockOrEmpty = false;
         _resetListCounter();
         i++;
         continue;
@@ -133,6 +151,7 @@ class MarkdownParser {
           ),
         );
         _widgetKeyCounter++;
+        _lastWasBlockOrEmpty = false;
         _resetListCounter();
         i++;
         continue;
@@ -155,6 +174,7 @@ class MarkdownParser {
           ),
         );
         _widgetKeyCounter++;
+        _lastWasBlockOrEmpty = false;
         _orderedListCounter++;
         i++;
         continue;
@@ -166,7 +186,14 @@ class MarkdownParser {
       if (line.contains('|')) {
         final tableResult = _parseTable(lines, i);
         if (tableResult != null) {
-          widgets.add(tableResult.widget);
+          widgets.add(
+            KeyedSubtree(
+              key: ValueKey('md_table_$_widgetKeyCounter'),
+              child: tableResult.widget,
+            ),
+          );
+          _widgetKeyCounter++;
+          _lastWasBlockOrEmpty = true;
           i = tableResult.nextLineIndex;
           continue;
         }
@@ -177,15 +204,25 @@ class MarkdownParser {
       if (indentedCodeMatch != null) {
         final result = _parseIndentedCodeBlock(lines, i);
         if (result != null) {
-          widgets.add(result.widget);
+          widgets.add(
+            KeyedSubtree(
+              key: ValueKey('md_code_$_widgetKeyCounter'),
+              child: result.widget,
+            ),
+          );
+          _widgetKeyCounter++;
+          _lastWasBlockOrEmpty = true;
           i = result.nextLineIndex;
           continue;
         }
       }
 
-      // Empty lines create paragraph spacing
+      // Empty lines create paragraph spacing (skip if last was already block/empty)
       if (line.trim().isEmpty) {
-        widgets.add(const SizedBox(height: 16));
+        if (!_lastWasBlockOrEmpty) {
+          widgets.add(const SizedBox(height: 12));
+          _lastWasBlockOrEmpty = true;
+        }
         _resetListCounter();
       } else {
         // Regular text line
@@ -196,6 +233,7 @@ class MarkdownParser {
           ),
         );
         _widgetKeyCounter++;
+        _lastWasBlockOrEmpty = false;
       }
       i++;
     }
@@ -938,20 +976,21 @@ class MarkdownParser {
     final imageBuilder = builder.image?.call(alt, url);
     if (imageBuilder != null) return WidgetSpan(child: imageBuilder);
 
-    return WidgetSpan(
-      child: Image.network(
-        url,
-        errorBuilder: (context, error, stackTrace) => Text('[$alt]'),
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return const SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          );
-        },
-      ),
-    );
+    return WidgetSpan(child: Text(alt));
+    // return WidgetSpan(
+    //   child: Image.network(
+    //     url,
+    //     errorBuilder: (context, error, stackTrace) => Text('[$alt]'),
+    //     loadingBuilder: (context, child, loadingProgress) {
+    //       if (loadingProgress == null) return child;
+    //       return const SizedBox(
+    //         width: 20,
+    //         height: 20,
+    //         child: CircularProgressIndicator(strokeWidth: 2),
+    //       );
+    //     },
+    //   ),
+    // );
   }
 
   void _launchUrlSafely(String url) async {
