@@ -10,14 +10,17 @@ class MarkdownParser {
     required this.style,
     required this.builder,
     this.textAlign,
+    this.searchQuery,
   });
 
   final String data;
   final MarkdownStyle style;
   final MarkdownBuilder builder;
   final TextAlign? textAlign;
+  final String? searchQuery;
   int _orderedListCounter = 1;
   bool _inOrderedList = false;
+  int _widgetKeyCounter = 0;
 
   // Pre-compiled regex patterns for better performance
   static final RegExp _headerPattern = RegExp(r'^(#{1,6})\s+(.*)');
@@ -53,9 +56,11 @@ class MarkdownParser {
   // Blockquote pattern
   static final RegExp _blockquotePattern = RegExp(r'^>\s?(.*)');
 
+  /// Parses the markdown data and returns a list of widgets.
   List<Widget> parse() {
     _orderedListCounter = 1;
     _inOrderedList = false;
+    _widgetKeyCounter = 0;
 
     final lines = _splitLines(data);
     final widgets = <Widget>[];
@@ -88,7 +93,13 @@ class MarkdownParser {
       if (headerMatch != null) {
         final level = headerMatch.group(1)!.length;
         final content = headerMatch.group(2)!;
-        widgets.add(_buildHeader(level, content));
+        widgets.add(
+          KeyedSubtree(
+            key: ValueKey('md_h${level}_$_widgetKeyCounter'),
+            child: _buildHeader(level, content),
+          ),
+        );
+        _widgetKeyCounter++;
         _resetListCounter();
         i++;
         continue;
@@ -98,7 +109,13 @@ class MarkdownParser {
       final blockquoteMatch = _blockquotePattern.firstMatch(line);
       if (blockquoteMatch != null) {
         final content = blockquoteMatch.group(1)!;
-        widgets.add(_buildBlockquote(content));
+        widgets.add(
+          KeyedSubtree(
+            key: ValueKey('md_quote_$_widgetKeyCounter'),
+            child: _buildBlockquote(content),
+          ),
+        );
+        _widgetKeyCounter++;
         _resetListCounter();
         i++;
         continue;
@@ -109,7 +126,13 @@ class MarkdownParser {
       if (unorderedMatch != null) {
         final indent = unorderedMatch.group(1)!.length;
         final content = unorderedMatch.group(2)!;
-        widgets.add(_buildUnorderedList(content, indent));
+        widgets.add(
+          KeyedSubtree(
+            key: ValueKey('md_ul_$_widgetKeyCounter'),
+            child: _buildUnorderedList(content, indent),
+          ),
+        );
+        _widgetKeyCounter++;
         _resetListCounter();
         i++;
         continue;
@@ -125,7 +148,13 @@ class MarkdownParser {
           _inOrderedList = true;
         }
 
-        widgets.add(_buildOrderedList(content, indent));
+        widgets.add(
+          KeyedSubtree(
+            key: ValueKey('md_ol_$_widgetKeyCounter'),
+            child: _buildOrderedList(content, indent),
+          ),
+        );
+        _widgetKeyCounter++;
         _orderedListCounter++;
         i++;
         continue;
@@ -160,7 +189,13 @@ class MarkdownParser {
         _resetListCounter();
       } else {
         // Regular text line
-        widgets.add(_parseLine(line));
+        widgets.add(
+          KeyedSubtree(
+            key: ValueKey('md_text_$_widgetKeyCounter'),
+            child: _parseLine(line),
+          ),
+        );
+        _widgetKeyCounter++;
       }
       i++;
     }
@@ -270,7 +305,7 @@ class MarkdownParser {
         child: Text(
           content,
           style:
-              style.codeBlock ??
+              style.codeBlock?.call(content) ??
               const TextStyle(fontFamily: 'monospace', fontSize: 14),
         ),
       ),
@@ -294,7 +329,7 @@ class MarkdownParser {
       child: Text.rich(
         processedContent,
         style:
-            style.blockquote ??
+            style.blockquote?.call(content) ??
             TextStyle(color: Colors.grey.shade700, fontStyle: FontStyle.italic),
         textAlign: textAlign,
       ),
@@ -310,7 +345,7 @@ class MarkdownParser {
         if (customWidget != null) return customWidget;
         return Text.rich(
           processedContent,
-          style: style.h1,
+          style: style.h1?.call(content),
           textAlign: textAlign,
         );
       case 2:
@@ -318,7 +353,7 @@ class MarkdownParser {
         if (customWidget != null) return customWidget;
         return Text.rich(
           processedContent,
-          style: style.h2,
+          style: style.h2?.call(content),
           textAlign: textAlign,
         );
       case 3:
@@ -326,7 +361,7 @@ class MarkdownParser {
         if (customWidget != null) return customWidget;
         return Text.rich(
           processedContent,
-          style: style.h3,
+          style: style.h3?.call(content),
           textAlign: textAlign,
         );
       case 4:
@@ -334,7 +369,7 @@ class MarkdownParser {
         if (customWidget != null) return customWidget;
         return Text.rich(
           processedContent,
-          style: style.h4,
+          style: style.h4?.call(content),
           textAlign: textAlign,
         );
       case 5:
@@ -342,7 +377,7 @@ class MarkdownParser {
         if (customWidget != null) return customWidget;
         return Text.rich(
           processedContent,
-          style: style.h5,
+          style: style.h5?.call(content),
           textAlign: textAlign,
         );
       case 6:
@@ -350,7 +385,7 @@ class MarkdownParser {
         if (customWidget != null) return customWidget;
         return Text.rich(
           processedContent,
-          style: style.h6,
+          style: style.h6?.call(content),
           textAlign: textAlign,
         );
       default:
@@ -358,7 +393,7 @@ class MarkdownParser {
         if (customWidget != null) return customWidget;
         return Text.rich(
           processedContent,
-          style: style.h1,
+          style: style.h1?.call(content),
           textAlign: textAlign,
         );
     }
@@ -378,7 +413,7 @@ class MarkdownParser {
           Expanded(
             child: Text.rich(
               processedContent,
-              style: style.unorderedList,
+              style: style.listItem?.call(content),
               textAlign: textAlign,
             ),
           ),
@@ -398,11 +433,11 @@ class MarkdownParser {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('$currentCounter. ', style: style.orderedList),
+          Text('$currentCounter. ', style: style.listItem?.call(content)),
           Expanded(
             child: Text.rich(
               processedContent,
-              style: style.orderedList,
+              style: style.listItem?.call(content),
               textAlign: textAlign,
             ),
           ),
@@ -446,7 +481,7 @@ class MarkdownParser {
         if (cellBuilder != null) return cellBuilder;
         return Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Text(cell.trim(), style: style.tableHeader),
+          child: Text(cell.trim(), style: style.tableHeader?.call(cell.trim())),
         );
       }).toList(),
     );
@@ -470,7 +505,7 @@ class MarkdownParser {
           if (cellBuilder != null) return cellBuilder;
           return Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Text(cell.trim(), style: style.tableCell),
+            child: Text(cell.trim(), style: style.tableCell?.call(cell.trim())),
           );
         }).toList(),
       );
@@ -536,13 +571,25 @@ class MarkdownParser {
     }
 
     final richText = _parseLineAsRichText(line);
-    return Text.rich(richText, textAlign: textAlign ?? TextAlign.start);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Text.rich(
+        richText,
+        style: style.text?.call(line),
+        textAlign: textAlign ?? TextAlign.start,
+      ),
+    );
   }
 
   TextSpan _parseLineAsRichText(String line) {
     final processedLine = _processEscapedCharacters(line);
     final spans = <InlineSpan>[];
     int lastIndex = 0;
+
+    // If there's a search query, handle highlighting
+    if (searchQuery != null && searchQuery!.isNotEmpty) {
+      return _parseLineWithHighlight(processedLine, line);
+    }
 
     // Find all inline elements
     final allMatches = <_MatchInfo>[];
@@ -580,9 +627,8 @@ class MarkdownParser {
       final match = matchInfo.match;
 
       if (match.start > lastIndex) {
-        spans.add(
-          TextSpan(text: processedLine.substring(lastIndex, match.start)),
-        );
+        final text = processedLine.substring(lastIndex, match.start);
+        spans.add(TextSpan(text: text, style: style.text?.call(text)));
       }
 
       switch (matchInfo.type) {
@@ -613,14 +659,141 @@ class MarkdownParser {
     }
 
     if (lastIndex < processedLine.length) {
-      spans.add(TextSpan(text: processedLine.substring(lastIndex)));
+      final text = processedLine.substring(lastIndex);
+      spans.add(TextSpan(text: text, style: style.text?.call(text)));
     }
 
     if (spans.isEmpty) {
-      spans.add(TextSpan(text: processedLine));
+      spans.add(
+        TextSpan(text: processedLine, style: style.text?.call(processedLine)),
+      );
     }
 
-    return TextSpan(children: spans, style: const TextStyle());
+    return TextSpan(children: spans);
+  }
+
+  TextSpan _parseLineWithHighlight(String processedLine, String originalLine) {
+    final spans = <InlineSpan>[];
+    int lastIndex = 0;
+
+    // Find all inline elements first
+    final allMatches = <_MatchInfo>[];
+
+    for (final match in _imagePattern.allMatches(processedLine)) {
+      allMatches.add(_MatchInfo(match, _MatchType.image));
+    }
+    for (final match in _linkPattern.allMatches(processedLine)) {
+      allMatches.add(_MatchInfo(match, _MatchType.link));
+    }
+    for (final match in _inlineCodePattern.allMatches(processedLine)) {
+      allMatches.add(_MatchInfo(match, _MatchType.code));
+    }
+    for (final match in _strikethroughPattern.allMatches(processedLine)) {
+      allMatches.add(_MatchInfo(match, _MatchType.strikethrough));
+    }
+    for (final match in _boldItalicCombinedPattern.allMatches(processedLine)) {
+      allMatches.add(_MatchInfo(match, _MatchType.boldItalic));
+    }
+
+    allMatches.sort((a, b) => a.match.start.compareTo(b.match.start));
+    final nonOverlapping = _removeOverlappingMatches(allMatches);
+
+    for (final matchInfo in nonOverlapping) {
+      final match = matchInfo.match;
+
+      if (match.start > lastIndex) {
+        final text = processedLine.substring(lastIndex, match.start);
+        spans.addAll(_highlightText(text, originalLine));
+      }
+
+      switch (matchInfo.type) {
+        case _MatchType.image:
+          final alt = match.group(1) ?? '';
+          final url = match.group(2) ?? '';
+          spans.add(_createImageSpan(alt, url));
+        case _MatchType.link:
+          final text = match.group(1) ?? '';
+          final url = match.group(2) ?? '';
+          spans.add(_createLinkSpan(text, url));
+        case _MatchType.code:
+          final code = match.group(1) ?? '';
+          spans.add(_createInlineCodeSpan(code));
+        case _MatchType.strikethrough:
+          final text = match.group(1) ?? '';
+          spans.add(_createStrikethroughSpan(text));
+        case _MatchType.boldItalic:
+          spans.add(_processBoldItalicMatch(match));
+      }
+
+      lastIndex = match.end;
+    }
+
+    if (lastIndex < processedLine.length) {
+      final text = processedLine.substring(lastIndex);
+      spans.addAll(_highlightText(text, originalLine));
+    }
+
+    if (spans.isEmpty) {
+      spans.add(
+        TextSpan(text: processedLine, style: style.text?.call(processedLine)),
+      );
+    }
+
+    return TextSpan(children: spans);
+  }
+
+  List<InlineSpan> _highlightText(String text, String originalLine) {
+    if (text.isEmpty) return [];
+
+    final query = searchQuery!;
+    final spans = <InlineSpan>[];
+    final lowerText = text.toLowerCase();
+    final lowerQuery = query.toLowerCase();
+
+    int lastIndex = 0;
+    int index = lowerText.indexOf(lowerQuery);
+
+    while (index != -1) {
+      // Add text before highlight
+      if (index > lastIndex) {
+        final beforeText = text.substring(lastIndex, index);
+        spans.add(
+          TextSpan(text: beforeText, style: style.text?.call(originalLine)),
+        );
+      }
+
+      // Add highlighted text
+      final highlightedText = text.substring(index, index + query.length);
+      spans.add(
+        TextSpan(
+          text: highlightedText,
+          style: style.text
+              ?.call(originalLine)
+              ?.merge(
+                TextStyle(
+                  backgroundColor: Color(0xFFFFEB3B),
+                  fontWeight: FontWeight.bold,
+                ).merge(style.highlightStyle),
+              ),
+          // (style.highlightStyle ??
+          //         const )
+          //     .merge(style.text?.call(originalLine)),
+        ),
+      );
+
+      lastIndex = index + query.length;
+      index = lowerText.indexOf(lowerQuery, lastIndex);
+    }
+
+    // Add remaining text
+    if (lastIndex < text.length) {
+      final remainingText = text.substring(lastIndex);
+      spans.add(
+        TextSpan(text: remainingText, style: style.text?.call(originalLine)),
+      );
+    }
+
+    return spans;
   }
 
   List<_MatchInfo> _removeOverlappingMatches(List<_MatchInfo> matches) {
@@ -668,7 +841,7 @@ class MarkdownParser {
     return TextSpan(
       text: content,
       style:
-          style.boldItalic ??
+          style.boldItalic?.call(content) ??
           const TextStyle(
             fontWeight: FontWeight.bold,
             fontStyle: FontStyle.italic,
@@ -679,13 +852,13 @@ class MarkdownParser {
   InlineSpan _createBoldSpan(String content) {
     final boldBuilder = builder.bold?.call(content);
     if (boldBuilder != null) return WidgetSpan(child: boldBuilder);
-    return TextSpan(text: content, style: style.bold);
+    return TextSpan(text: content, style: style.bold?.call(content));
   }
 
   InlineSpan _createItalicSpan(String content) {
     final italicBuilder = builder.italic?.call(content);
     if (italicBuilder != null) return WidgetSpan(child: italicBuilder);
-    return TextSpan(text: content, style: style.italic);
+    return TextSpan(text: content, style: style.italic?.call(content));
   }
 
   InlineSpan _createStrikethroughSpan(String content) {
@@ -695,7 +868,7 @@ class MarkdownParser {
     return TextSpan(
       text: content,
       style:
-          style.strikethrough ??
+          style.strikethrough?.call(content) ??
           const TextStyle(decoration: TextDecoration.lineThrough),
     );
   }
@@ -707,7 +880,7 @@ class MarkdownParser {
     return TextSpan(
       text: code,
       style:
-          style.inlineCode ??
+          style.inlineCode?.call(code) ??
           TextStyle(
             fontFamily: 'monospace',
             backgroundColor: Colors.grey.shade200,
@@ -722,7 +895,7 @@ class MarkdownParser {
 
     return TextSpan(
       text: text,
-      style: style.link,
+      style: style.link?.call(text),
       recognizer: TapGestureRecognizer()..onTap = () => _launchUrlSafely(url),
     );
   }

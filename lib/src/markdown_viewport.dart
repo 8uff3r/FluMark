@@ -21,15 +21,36 @@ class MarkdownViewport extends StatefulWidget {
     this.textAlign,
     this.physics,
     this.controller,
+    this.padding,
+    this.searchQuery,
   });
 
+  /// The markdown string to render
   final String data;
+
+  /// Custom styles for markdown elements (function-based for content-aware styling)
   final MarkdownStyle? style;
+
+  /// Global base style applied to all text elements (useful for setting base font size, etc.)
   final TextStyle? globalStyle;
+
+  /// Custom widget builders for markdown elements
   final MarkdownBuilder? builder;
+
+  /// Text alignment for all text elements
   final TextAlign? textAlign;
+
+  /// Scroll physics for the viewport
   final ScrollPhysics? physics;
+
+  /// Scroll controller for programmatic scrolling
   final ScrollController? controller;
+
+  /// Padding around the markdown content
+  final EdgeInsets? padding;
+
+  /// Search query to highlight in the markdown content
+  final String? searchQuery;
 
   @override
   State<MarkdownViewport> createState() => _MarkdownViewportState();
@@ -49,7 +70,11 @@ class _MarkdownViewportState extends State<MarkdownViewport> {
   @override
   void didUpdateWidget(MarkdownViewport oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.data != widget.data) {
+    if (oldWidget.data != widget.data ||
+        oldWidget.style != widget.style ||
+        oldWidget.globalStyle != widget.globalStyle ||
+        oldWidget.builder != widget.builder ||
+        oldWidget.searchQuery != widget.searchQuery) {
       _parseMarkdownElements();
     }
   }
@@ -57,56 +82,125 @@ class _MarkdownViewportState extends State<MarkdownViewport> {
   void _parseMarkdownElements() {
     if (!mounted) return;
 
-    final defaultStyle = Theme.of(context).textTheme;
-    final mdStyle = MarkdownStyle(
-      h1: defaultStyle.headlineMedium
-          ?.merge(widget.globalStyle)
-          .merge(widget.style?.h1),
-      h2: defaultStyle.headlineSmall
-          ?.merge(widget.globalStyle)
-          .merge(widget.style?.h2),
-      h3: defaultStyle.titleLarge
-          ?.merge(widget.globalStyle)
-          .merge(widget.style?.h3),
-      h4: defaultStyle.titleMedium
-          ?.merge(widget.globalStyle)
-          .merge(widget.style?.h4),
-      h5: defaultStyle.titleSmall
-          ?.merge(widget.globalStyle)
-          .merge(widget.style?.h5),
-      h6: defaultStyle.bodyLarge
-          ?.merge(widget.globalStyle)
-          .merge(widget.style?.h6),
-      bold: const TextStyle(
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final colorScheme = theme.colorScheme;
+
+    // Build default style with content-aware functions
+    final defaultStyle = MarkdownStyle(
+      text: (content) => textTheme.bodyMedium?.merge(widget.globalStyle),
+      h1: (content) => textTheme.headlineMedium
+          ?.copyWith(fontWeight: FontWeight.bold)
+          .merge(widget.globalStyle)
+          .merge(widget.style?.h1?.call(content)),
+      h2: (content) => textTheme.headlineSmall
+          ?.copyWith(fontWeight: FontWeight.bold)
+          .merge(widget.globalStyle)
+          .merge(widget.style?.h2?.call(content)),
+      h3: (content) => textTheme.titleLarge
+          ?.copyWith(fontWeight: FontWeight.bold)
+          .merge(widget.globalStyle)
+          .merge(widget.style?.h3?.call(content)),
+      h4: (content) => textTheme.titleMedium
+          ?.copyWith(fontWeight: FontWeight.w600)
+          .merge(widget.globalStyle)
+          .merge(widget.style?.h4?.call(content)),
+      h5: (content) => textTheme.titleSmall
+          ?.copyWith(fontWeight: FontWeight.w600)
+          .merge(widget.globalStyle)
+          .merge(widget.style?.h5?.call(content)),
+      h6: (content) => textTheme.bodyLarge
+          ?.copyWith(fontWeight: FontWeight.w600)
+          .merge(widget.globalStyle)
+          .merge(widget.style?.h6?.call(content)),
+      bold: (content) => const TextStyle(
         fontWeight: FontWeight.bold,
-      ).merge(widget.globalStyle).merge(widget.style?.bold),
-      italic: const TextStyle(
+      ).merge(widget.globalStyle).merge(widget.style?.bold?.call(content)),
+      italic: (content) => const TextStyle(
         fontStyle: FontStyle.italic,
-      ).merge(widget.globalStyle).merge(widget.style?.italic),
-      unorderedList: defaultStyle.bodyMedium
-          ?.merge(widget.globalStyle)
-          .merge(widget.style?.unorderedList),
-      orderedList: defaultStyle.bodyMedium
-          ?.merge(widget.globalStyle)
-          .merge(widget.style?.orderedList),
-      link: const TextStyle(
-        color: Colors.blue,
+      ).merge(widget.globalStyle).merge(widget.style?.italic?.call(content)),
+      boldItalic: (content) =>
+          const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontStyle: FontStyle.italic,
+              )
+              .merge(widget.globalStyle)
+              .merge(widget.style?.boldItalic?.call(content)),
+      strikethrough: (content) =>
+          const TextStyle(decoration: TextDecoration.lineThrough)
+              .merge(widget.globalStyle)
+              .merge(widget.style?.strikethrough?.call(content)),
+      inlineCode: (content) =>
+          TextStyle(
+                fontFamily: 'monospace',
+                fontSize: (widget.globalStyle?.fontSize ?? 14) * 0.9,
+                backgroundColor: colorScheme.surfaceContainerHighest
+                    .withOpacity(0.3),
+              )
+              .merge(widget.globalStyle)
+              .merge(widget.style?.inlineCode?.call(content)),
+      codeBlock: (content) => TextStyle(
+        fontFamily: 'monospace',
+        fontSize: (widget.globalStyle?.fontSize ?? 14) * 0.9,
+      ).merge(widget.globalStyle).merge(widget.style?.codeBlock?.call(content)),
+      blockquote: (content) =>
+          TextStyle(
+                color: colorScheme.onSurface.withOpacity(0.7),
+                fontStyle: FontStyle.italic,
+              )
+              .merge(widget.globalStyle)
+              .merge(widget.style?.blockquote?.call(content)),
+      link: (content) => TextStyle(
+        color: colorScheme.primary,
         decoration: TextDecoration.underline,
-      ).merge(widget.globalStyle).merge(widget.style?.link),
-      tableBorder: widget.style?.tableBorder,
-      tableHeader: defaultStyle.bodyMedium
+      ).merge(widget.globalStyle).merge(widget.style?.link?.call(content)),
+      listItem: (content) => textTheme.bodyMedium
           ?.merge(widget.globalStyle)
-          .merge(widget.style?.tableHeader),
-      tableCell: defaultStyle.bodyMedium
+          .merge(widget.style?.listItem?.call(content)),
+      tableHeader: (content) => textTheme.bodyMedium
+          ?.copyWith(fontWeight: FontWeight.bold)
+          .merge(widget.globalStyle)
+          .merge(widget.style?.tableHeader?.call(content)),
+      tableCell: (content) => textTheme.bodyMedium
           ?.merge(widget.globalStyle)
-          .merge(widget.style?.tableCell),
+          .merge(widget.style?.tableCell?.call(content)),
+      tableBorder:
+          widget.style?.tableBorder ??
+          TableBorder.all(color: colorScheme.outlineVariant, width: 1),
+      codeBlockDecoration:
+          widget.style?.codeBlockDecoration ??
+          BoxDecoration(
+            color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withOpacity(0.5),
+            ),
+          ),
+      blockquoteDecoration:
+          widget.style?.blockquoteDecoration ??
+          BoxDecoration(
+            border: Border(
+              left: BorderSide(
+                color: colorScheme.primary.withOpacity(0.5),
+                width: 4,
+              ),
+            ),
+            color: colorScheme.surfaceContainerHighest.withOpacity(0.2),
+          ),
+      highlightStyle:
+          widget.style?.highlightStyle ??
+          const TextStyle(
+            backgroundColor: Color(0xFFFFEB3B),
+            fontWeight: FontWeight.bold,
+          ),
     );
 
     final parser = MarkdownParser(
       data: widget.data,
-      style: mdStyle,
+      style: defaultStyle,
       builder: widget.builder ?? const MarkdownBuilder(),
       textAlign: widget.textAlign,
+      searchQuery: widget.searchQuery,
     );
 
     final newWidgets = parser.parse();
@@ -124,17 +218,20 @@ class _MarkdownViewportState extends State<MarkdownViewport> {
       return const Center(child: CircularProgressIndicator());
     }
 
+    final content = SliverPadding(
+      padding: widget.padding ?? EdgeInsets.zero,
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) => _widgets![index],
+          childCount: _widgets!.length,
+        ),
+      ),
+    );
+
     return CustomScrollView(
       controller: widget.controller,
       physics: widget.physics,
-      slivers: [
-        SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) => _widgets![index],
-            childCount: _widgets!.length,
-          ),
-        ),
-      ],
+      slivers: [content],
     );
   }
 }
